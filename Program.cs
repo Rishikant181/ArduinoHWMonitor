@@ -99,7 +99,7 @@ namespace ArduinoHWMonitor {
             gpuUsage = padStat(gpuUsage);
 
             // Creating combined stat
-            String stats = "CPU : " + cpuUsage + "%" + "  " + cpuTemp + char)(248) + "C" + "\nGPU : " + gpuUsage + "%" + "  " + gpuTemp + "C";
+            String stats = "CPU : " + cpuUsage + "%" + "  " + cpuTemp + "C" + "\nGPU : " + gpuUsage + "%" + "  " + gpuTemp + "C";
             return stats;
         }
 
