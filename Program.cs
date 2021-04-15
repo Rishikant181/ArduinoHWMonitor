@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.IO.Ports;
 using OpenHardwareMonitor;
 using OpenHardwareMonitor.Hardware;
 
@@ -10,6 +11,7 @@ namespace ArduinoHWMonitor {
     class Program {
         // Member data
         Computer thisComputer;                              // To store the reference to this computer
+        SerialPort serPort;                                 // To store connection to serial port
         
         // Temperature stats
         String cpuTemp;                                     // To store CPU temperature
@@ -25,8 +27,30 @@ namespace ArduinoHWMonitor {
             // Creating new connection to get GPU and CPU data
             thisComputer = new Computer() { CPUEnabled = true, GPUEnabled = true };
 
+            // Creating connection to SerialPort
+            serPort = new SerialPort();
+            serPort.PortName = "COM3";                      // Setting port name
+            serPort.BaudRate = 500000;                      // Setting baud rate
+
+            // Opening port
+            serPort.Open();
+
             // Opening connection
             thisComputer.Open();
+        }
+
+        // Method to pad stats to 3 digits
+        private String padStat(String stat) {
+            if(stat.Length == 1) {
+                return "  " + stat;
+            }
+            else if(stat.Length == 2) {
+                return " " + stat;
+            }
+            else if(stat.Length == 3) {
+                return stat;
+            }
+            return "   ";
         }
 
         // Method to get CPU and GPU stats
@@ -41,11 +65,11 @@ namespace ArduinoHWMonitor {
                     foreach(var sensor in hwItem.Sensors) {
                         // For temp
                         if(sensor.SensorType == SensorType.Temperature) {
-                            cpuTemp = sensor.Value.Value.ToString();
+                            cpuTemp = "" + (int)Math.Round(sensor.Value.Value);
                         }
                         // For usage
                         else if(sensor.SensorType == SensorType.Load) {
-                            cpuUsage = sensor.Value.Value.ToString();
+                            cpuUsage = "" + (int)Math.Round(sensor.Value.Value);
                         }
                     }
                 }
@@ -57,26 +81,41 @@ namespace ArduinoHWMonitor {
                     foreach (var sensor in hwItem.Sensors) {
                         // For temp
                         if (sensor.SensorType == SensorType.Temperature) {
-                            gpuTemp = sensor.Value.Value.ToString();
+                            gpuTemp = "" + (int)Math.Round(sensor.Value.Value);
                         }
                         // For usage
-                        else if (sensor.SensorType == SensorType.Load) {
-                            gpuUsage = sensor.Value.Value.ToString();
+                        else if (sensor.SensorType == SensorType.Load && sensor.Name == "GPU Core") {
+                            gpuUsage = "" + (int)Math.Round(sensor.Value.Value);
                         }
                     }
                 }
             }
 
-            // Returning data
-            return (cpuTemp + "\t\t" + cpuUsage + "\n" + gpuTemp + "\t\t" + gpuUsage);
+            // Padding stats
+            cpuTemp = padStat(cpuTemp);
+            gpuTemp = padStat(gpuTemp);
+
+            cpuUsage = padStat(cpuUsage);
+            gpuUsage = padStat(gpuUsage);
+
+            // Creating combined stat
+            String stats = "CPU : " + cpuUsage + "%" + "  " + cpuTemp + "C" + "\nGPU : " + gpuUsage + "%" + "  " + gpuTemp + "C";
+            return stats;
+        }
+
+        // Method to relay stats through serial port
+        private void sendStats(String stats) {
+            serPort.WriteLine(stats);
         }
 
         // Main method
         public static void Main(String[] args) {
             Program ob = new Program();
-            while(true) {
-                Console.WriteLine(ob.getStats());
-                Thread.Sleep(1000);
+            while (true) {
+                String stats = ob.getStats();
+                Console.WriteLine(stats);
+                ob.sendStats(stats);
+                Thread.Sleep(2000);
             }
         }
     }
