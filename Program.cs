@@ -115,7 +115,7 @@ namespace ArduinoHWMonitor {
                 String stats = ob.getStats();
                 Console.WriteLine(stats);
                 ob.sendStats(stats);
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
             }
         }
     }
